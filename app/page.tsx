@@ -19,6 +19,8 @@ type AnalyzeResponse = {
 };
 
 export default function Home() {
+  const [password, setPassword] = useState("");
+  const [authorized, setAuthorized] = useState(false);
   const [form, setForm] = useState({
     equipmentDescription: "",
     make: "",
@@ -62,6 +64,44 @@ export default function Home() {
       setLoading(false);
     }
   }
+  if (!authorized) {
+    return (
+      <main className="max-w-md mx-auto p-6 space-y-4">
+        <h1 className="text-2xl font-bold">RCFA AI Demo</h1>
+
+        <input
+          type="password"
+          placeholder="Access password"
+          className="border p-2 w-full rounded"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <button
+          className="bg-black text-white px-4 py-2 rounded"
+          onClick={() => {
+            const expected = process.env.NEXT_PUBLIC_APP_PASSWORD || "";
+            if (!expected) {
+              setError("Password is not configured.");
+              return;
+            }
+
+            if (password === expected) {
+              setAuthorized(true);
+              setError("");
+            } else {
+              setError("Incorrect password");
+            }
+          }}
+
+        >
+          Enter
+        </button>
+
+        {error && <div className="text-red-600">{error}</div>}
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-4xl mx-auto p-6 space-y-6">
@@ -70,7 +110,7 @@ export default function Home() {
         Enter failure details and click Analyze to generate RCFA insights.
       </p>
 
-      <Input label="Equipment Description *" value={form.equipmentDescription} onChange={(v) => updateField("equipmentDescription", v)} />
+      <Input label="Equipment Description (Required Field)" value={form.equipmentDescription} onChange={(v) => updateField("equipmentDescription", v)} />
       <Input label="Make" value={form.make} onChange={(v) => updateField("make", v)} />
       <Input label="Model" value={form.model} onChange={(v) => updateField("model", v)} />
       <Input label="Serial Number" value={form.serialNumber} onChange={(v) => updateField("serialNumber", v)} />
@@ -79,7 +119,7 @@ export default function Home() {
       <Textarea label="Work History" value={form.workHistory} onChange={(v) => updateField("workHistory", v)} />
       <Textarea label="Active PMs" value={form.activePMs} onChange={(v) => updateField("activePMs", v)} />
       <Textarea label="Pre-Failure Conditions" value={form.preFailure} onChange={(v) => updateField("preFailure", v)} />
-      <Textarea label="Failure Description *" value={form.failureDescription} onChange={(v) => updateField("failureDescription", v)} />
+      <Textarea label="Failure Description (Required Field)" value={form.failureDescription} onChange={(v) => updateField("failureDescription", v)} />
       <Textarea label="Additional Notes" value={form.additionalNotes} onChange={(v) => updateField("additionalNotes", v)} />
 
       <button
