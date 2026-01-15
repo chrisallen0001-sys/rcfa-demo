@@ -1,92 +1,107 @@
 import { NextResponse } from "next/server";
+import OpenAI from "openai";
+
+const MODEL = process.env.OPENAI_MODEL || "gpt-5.2";
+
+function getClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
+  return new OpenAI({ apiKey });
+}
+
+function buildPrompt(body: any) {
+  return `
+You are an expert reliability engineer performing an RCFA.
+
+Return ONLY valid JSON (no markdown, no extra text) with exactly these keys:
+- followUpQuestions: string[]
+- rootCauseContenders: { cause: string; rationale: string; confidence: "low"|"medium"|"high" }[]
+- actionItems: { action: string; owner: string; priority: "P1"|"P2"|"P3"; timeframe: "Immediate"|"Short-term"|"Long-term"; successCriteria: string }[]
+
+Rules:
+- 5–10 followUpQuestions
+- 3–6 rootCauseContenders
+- 5–10 actionItems
+- If info is missing, ask follow-up questions rather than inventing specifics.
+
+RCFA INTAKE
+Equipment Description: ${body?.equipmentDescription || ""}
+Make: ${body?.make || ""}
+Model: ${body?.model || ""}
+Serial Number: ${body?.serialNumber || ""}
+Age: ${body?.age || ""}
+
+Work History: ${body?.workHistory || ""}
+Active PMs: ${body?.activePMs || ""}
+
+Pre-Failure Conditions: ${body?.preFailure || ""}
+Failure Description: ${body?.failureDescription || ""}
+
+Additional Notes: ${body?.additionalNotes || ""}
+`.trim();
+}
+
+function tryParseJson(text: string): any {
+  return JSON.parse(text.trim());
+}
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  console.log("Has key?", Boolean(process.env.OPENAI_API_KEY));
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "Missing OPENAI_API_KEY in .env.local" },
+        { status: 500 }
+      );
+    }
 
-  // Simple required-field check (MVP)
-  if (!body?.equipmentDescription || !body?.failureDescription) {
+    const client = getClient();
+
+    const body = await req.json();
+
+    if (!body?.equipmentDescription || !body?.failureDescription) {
+      return NextResponse.json(
+        { error: "equipmentDescription and failureDescription are required." },
+        { status: 400 }
+      );
+    }
+
+    const prompt = buildPrompt(body);
+
+    // 1) First attempt
+    const r1 = await client.responses.create({
+      model: MODEL,
+      input: prompt,
+      temperature: 0.2,
+    });
+
+    const t1 = r1.output_text || "";
+    try {
+      const json = tryParseJson(t1);
+      return NextResponse.json(json);
+    } catch (e1: any) {
+      // 2) One retry: ask model to fix JSON only
+      const r2 = await client.responses.create({
+        model: MODEL,
+        input: [
+          { role: "user", content: prompt },
+          {
+            role: "user",
+            content:
+              "Your previous response was not valid JSON. Return ONLY valid JSON matching the required keys and enums. No extra text.",
+          },
+        ],
+        temperature: 0.2,
+      });
+
+      const t2 = r2.output_text || "";
+      const json2 = tryParseJson(t2);
+      return NextResponse.json(json2);
+    }
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "equipmentDescription and failureDescription are required." },
-      { status: 400 }
+      { error: "OpenAI request failed", details: err?.message || String(err) },
+      { status: 500 }
     );
   }
-
-  // Hardcoded output to prove end-to-end wiring works
-  return NextResponse.json({
-    followUpQuestions: [
-      "When did the failure start and was it sudden or gradual?",
-      "What changed recently (load, product, settings, environment, operator)?",
-      "Any alarms, vibration, temperature, or unusual noise before failure?",
-      "What was the last maintenance performed and by whom?",
-      "Has this asset failed similarly before? If yes, when and what was done?",
-      "What operating conditions were present (speed, load, pressure, flow)?",
-    ],
-    rootCauseContenders: [
-      {
-        cause: "Lubrication breakdown or contamination",
-        rationale:
-          "Common driver of premature wear; confirm lubricant type, interval, storage/handling, and contamination sources.",
-        confidence: "definetly not high",
-      },
-      {
-        cause: "Misalignment / soft foot / imbalance",
-        rationale:
-          "Can elevate vibration and fatigue components; verify alignment checks, coupling condition, base/grouting, and vibration data if available.",
-        confidence: "medium",
-      },
-      {
-        cause: "Operating outside design envelope",
-        rationale:
-          "Overload, excessive starts/stops, or process upset can cause rapid failure; confirm duty cycle and whether conditions differed from normal.",
-        confidence: "low",
-      },
-    ],
-    actionItems: [
-      {
-        action:
-          "Capture evidence: photos of failed parts, nameplate, and any visible damage; record observations (noise, smell, heat, vibration)",
-        owner: "Maintenance",
-        priority: "P1",
-        timeframe: "Immediate",
-        successCriteria:
-          "Evidence captured and attached to case notes; key observations documented with timestamps.",
-      },
-      {
-        action:
-          "Review last 12–24 months work orders for repeat patterns (same component, same symptoms, same downtime driver)",
-        owner: "Reliability",
-        priority: "P1",
-        timeframe: "Immediate",
-        successCriteria:
-          "WO summary created listing repeat failure modes, dates, and prior corrective actions; pattern documented.",
-      },
-      {
-        action:
-          "Confirm lubrication standard: correct lubricant, interval, and contamination controls; update PM if needed",
-        owner: "Maintenance",
-        priority: "P2",
-        timeframe: "Short-term",
-        successCriteria:
-          "Lubrication spec confirmed; PM updated (if required) and communicated to technicians.",
-      },
-      {
-        action:
-          "Check alignment and base condition (soft foot, looseness); correct and document readings",
-        owner: "Maintenance",
-        priority: "P2",
-        timeframe: "Short-term",
-        successCriteria:
-          "Alignment/soft foot checked; readings recorded; corrective work completed if out of tolerance.",
-      },
-      {
-        action:
-          "Define a verification check (30/90 days): confirm no recurrence and track leading indicators (vibration/temp/leaks/noise)",
-        owner: "Reliability",
-        priority: "P3",
-        timeframe: "Long-term",
-        successCriteria:
-          "Follow-up check completed at agreed interval; trend shows stable operation and no repeat failures.",
-      },
-    ],
-  });
 }
