@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type AnalyzeResponse = {
   followUpQuestions: string[];
@@ -35,6 +35,7 @@ export default function Home() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState("");
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
 
@@ -42,8 +43,23 @@ export default function Home() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined;
+
+    if (loading) {
+      interval = setInterval(() => {
+        setSeconds((s) => s + 1);
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loading]);
+
   async function analyze() {
     setLoading(true);
+    setSeconds(0);
     setError("");
     setResult(null);
 
@@ -62,8 +78,10 @@ export default function Home() {
       setError(err.message || "Unexpected error");
     } finally {
       setLoading(false);
+      setSeconds(0);
     }
   }
+
   if (!authorized) {
     return (
       <main className="max-w-md mx-auto p-6 space-y-4">
@@ -93,7 +111,6 @@ export default function Home() {
               setError("Incorrect password");
             }
           }}
-
         >
           Enter
         </button>
@@ -110,25 +127,76 @@ export default function Home() {
         Enter failure details and click Analyze to generate RCFA insights.
       </p>
 
-      <Input label="Equipment Description (Required Field)" value={form.equipmentDescription} onChange={(v) => updateField("equipmentDescription", v)} />
-      <Textarea label="Failure Description (Required Field)" value={form.failureDescription} onChange={(v) => updateField("failureDescription", v)} />
-      <Input label="Make (Optional)" value={form.make} onChange={(v) => updateField("make", v)} />
-      <Input label="Model (Optional)" value={form.model} onChange={(v) => updateField("model", v)} />
-      <Input label="Serial Number (Optional)" value={form.serialNumber} onChange={(v) => updateField("serialNumber", v)} />
-      <Input label="Age (Optional)" value={form.age} onChange={(v) => updateField("age", v)} />
+      <Input
+        label="Equipment Description (Required Field)"
+        value={form.equipmentDescription}
+        onChange={(v) => updateField("equipmentDescription", v)}
+      />
+      <Textarea
+        label="Failure Description (Required Field)"
+        value={form.failureDescription}
+        onChange={(v) => updateField("failureDescription", v)}
+      />
+      <Input
+        label="Make (Optional)"
+        value={form.make}
+        onChange={(v) => updateField("make", v)}
+      />
+      <Input
+        label="Model (Optional)"
+        value={form.model}
+        onChange={(v) => updateField("model", v)}
+      />
+      <Input
+        label="Serial Number (Optional)"
+        value={form.serialNumber}
+        onChange={(v) => updateField("serialNumber", v)}
+      />
+      <Input
+        label="Age (Optional)"
+        value={form.age}
+        onChange={(v) => updateField("age", v)}
+      />
 
-      <Textarea label="Work History (Optional)" value={form.workHistory} onChange={(v) => updateField("workHistory", v)} />
-      <Textarea label="Active PMs (Optional" value={form.activePMs} onChange={(v) => updateField("activePMs", v)} />
-      <Textarea label="Pre-Failure Conditions (Optional)" value={form.preFailure} onChange={(v) => updateField("preFailure", v)} />
-      <Textarea label="Additional Notes (Optional)" value={form.additionalNotes} onChange={(v) => updateField("additionalNotes", v)} />
+      <Textarea
+        label="Work History (Optional)"
+        value={form.workHistory}
+        onChange={(v) => updateField("workHistory", v)}
+      />
+      <Textarea
+        label="Active PMs (Optional)"
+        value={form.activePMs}
+        onChange={(v) => updateField("activePMs", v)}
+      />
+      <Textarea
+        label="Pre-Failure Conditions (Optional)"
+        value={form.preFailure}
+        onChange={(v) => updateField("preFailure", v)}
+      />
+      <Textarea
+        label="Additional Notes (Optional)"
+        value={form.additionalNotes}
+        onChange={(v) => updateField("additionalNotes", v)}
+      />
 
-      <button
-        onClick={analyze}
-        disabled={loading}
-        className="bg-black text-white px-4 py-2 rounded disabled:opacity-50"
-      >
-        {loading ? "Analyzing..." : "Analyze"}
-      </button>
+      <div className="space-y-1">
+        <button
+          onClick={analyze}
+          disabled={loading}
+          className="bg-black text-white px-4 py-2 rounded disabled:opacity-50"
+        >
+          {loading ? "Analyzing..." : "Analyze"}
+        </button>
+
+        {loading && (
+          <div className="text-sm text-gray-600">Analyzing… {seconds}s</div>
+        )}
+
+        {/* Show this note BOTH while loading and not loading */}
+        <div className="text-xs text-gray-500">
+          Analysis may take up to 60 seconds depending on failure complexity.
+        </div>
+      </div>
 
       {error && <div className="text-red-600">{error}</div>}
 
@@ -147,7 +215,9 @@ export default function Home() {
               <div key={i} className="border p-3 rounded">
                 <strong>{c.cause}</strong>
                 <p>{c.rationale}</p>
-                <p className="text-sm text-gray-500">Confidence: {c.confidence}</p>
+                <p className="text-sm text-gray-500">
+                  Confidence: {c.confidence}
+                </p>
               </div>
             ))}
           </Section>
@@ -157,7 +227,8 @@ export default function Home() {
               <div key={i} className="border p-3 rounded">
                 <strong>{a.action}</strong>
                 <p className="text-sm">
-                  Owner: {a.owner} · Priority: {a.priority} · Timeframe: {a.timeframe}
+                  Owner: {a.owner} · Priority: {a.priority} · Timeframe:{" "}
+                  {a.timeframe}
                 </p>
                 <p className="text-sm text-gray-600">{a.successCriteria}</p>
               </div>
@@ -169,7 +240,15 @@ export default function Home() {
   );
 }
 
-function Input({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function Input({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <label className="block">
       <span className="font-medium">{label}</span>
@@ -182,7 +261,15 @@ function Input({ label, value, onChange }: { label: string; value: string; onCha
   );
 }
 
-function Textarea({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function Textarea({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <label className="block">
       <span className="font-medium">{label}</span>
@@ -195,7 +282,13 @@ function Textarea({ label, value, onChange }: { label: string; value: string; on
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="border rounded p-4">
       <h2 className="font-bold mb-2">{title}</h2>
