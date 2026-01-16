@@ -111,16 +111,16 @@ export default function Home() {
       </p>
 
       <Input label="Equipment Description (Required Field)" value={form.equipmentDescription} onChange={(v) => updateField("equipmentDescription", v)} />
-      <Input label="Make" value={form.make} onChange={(v) => updateField("make", v)} />
-      <Input label="Model" value={form.model} onChange={(v) => updateField("model", v)} />
-      <Input label="Serial Number" value={form.serialNumber} onChange={(v) => updateField("serialNumber", v)} />
-      <Input label="Age" value={form.age} onChange={(v) => updateField("age", v)} />
-
-      <Textarea label="Work History" value={form.workHistory} onChange={(v) => updateField("workHistory", v)} />
-      <Textarea label="Active PMs" value={form.activePMs} onChange={(v) => updateField("activePMs", v)} />
-      <Textarea label="Pre-Failure Conditions" value={form.preFailure} onChange={(v) => updateField("preFailure", v)} />
       <Textarea label="Failure Description (Required Field)" value={form.failureDescription} onChange={(v) => updateField("failureDescription", v)} />
-      <Textarea label="Additional Notes" value={form.additionalNotes} onChange={(v) => updateField("additionalNotes", v)} />
+      <Input label="Make (Optional)" value={form.make} onChange={(v) => updateField("make", v)} />
+      <Input label="Model (Optional)" value={form.model} onChange={(v) => updateField("model", v)} />
+      <Input label="Serial Number (Optional)" value={form.serialNumber} onChange={(v) => updateField("serialNumber", v)} />
+      <Input label="Age (Optional)" value={form.age} onChange={(v) => updateField("age", v)} />
+
+      <Textarea label="Work History (Optional)" value={form.workHistory} onChange={(v) => updateField("workHistory", v)} />
+      <Textarea label="Active PMs (Optional" value={form.activePMs} onChange={(v) => updateField("activePMs", v)} />
+      <Textarea label="Pre-Failure Conditions (Optional)" value={form.preFailure} onChange={(v) => updateField("preFailure", v)} />
+      <Textarea label="Additional Notes (Optional)" value={form.additionalNotes} onChange={(v) => updateField("additionalNotes", v)} />
 
       <button
         onClick={analyze}
