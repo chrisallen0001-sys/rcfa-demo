@@ -1,5 +1,7 @@
 "use client";
 
+console.log("APP ENV:", process.env.NEXT_PUBLIC_APP_ENV);
+
 import { useState, useEffect } from "react";
 
 type AnalyzeResponse = {
