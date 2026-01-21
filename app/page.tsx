@@ -85,11 +85,35 @@ export default function Home() {
   }
 
   if (!authorized) {
-    return (
-      <main className="max-w-md mx-auto p-6 space-y-4">
-        <h1 className="text-2xl font-bold">RCFA AI Demo</h1>
+  const expected = process.env.NEXT_PUBLIC_APP_PASSWORD || "";
 
+  const handleLogin = () => {
+    if (!expected) {
+      setError("Password is not configured.");
+      return;
+    }
+
+    if (password === expected) {
+      setAuthorized(true);
+      setError("");
+    } else {
+      setError("Incorrect password");
+    }
+  };
+
+  return (
+    <main className="max-w-md mx-auto p-6 space-y-4">
+      <h1 className="text-2xl font-bold">RCFA AI Demo</h1>
+
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleLogin();
+        }}
+      >
         <input
+          autoFocus
           type="password"
           placeholder="Access password"
           className="border p-2 w-full rounded"
@@ -98,29 +122,18 @@ export default function Home() {
         />
 
         <button
+          type="submit"
           className="bg-black text-white px-4 py-2 rounded"
-          onClick={() => {
-            const expected = process.env.NEXT_PUBLIC_APP_PASSWORD || "";
-            if (!expected) {
-              setError("Password is not configured.");
-              return;
-            }
-
-            if (password === expected) {
-              setAuthorized(true);
-              setError("");
-            } else {
-              setError("Incorrect password");
-            }
-          }}
         >
           Enter
         </button>
+      </form>
 
-        {error && <div className="text-red-600">{error}</div>}
-      </main>
-    );
-  }
+      {error && <div className="text-red-600">{error}</div>}
+    </main>
+  );
+}
+
 
   return (
     <main className="max-w-4xl mx-auto p-6 space-y-6">
