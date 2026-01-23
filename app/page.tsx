@@ -132,7 +132,69 @@ export default function Home() {
     URL.revokeObjectURL(url);
   }
 
+  function clearForm() {
+    setForm({
+      equipmentDescription: "",
+      make: "",
+      model: "",
+      serialNumber: "",
+      age: "",
+      workHistory: "",
+      activePMs: "",
+      preFailure: "",
+      failureDescription: "",
+      additionalNotes: "",
+    });
+    setResult(null);
+    setError("");
+    setCopySuccess("");
+  }
+
+  function getErrorMessage(status: number, data: any, err: any): string {
+    // Handle specific HTTP status codes
+    if (status === 401) {
+      return "Session expired. Please log in again.";
+    }
+    if (status === 429) {
+      return "Rate limit exceeded. OpenAI is receiving too many requests. Please wait a moment and try again.";
+    }
+    if (status === 500) {
+      const details = data?.details || "";
+      if (details.includes("API key")) {
+        return "OpenAI API key configuration error. Please contact support.";
+      }
+      if (details.includes("quota")) {
+        return "OpenAI API quota exceeded. Please contact support.";
+      }
+      if (details.includes("overloaded")) {
+        return "OpenAI servers are currently overloaded. Please try again in a moment.";
+      }
+      return `Server error: ${data?.error || "Unknown error"}`;
+    }
+    if (status === 400) {
+      return data?.error || "Invalid request. Please check your input and try again.";
+    }
+
+    // Handle network errors
+    if (err.message?.includes("fetch")) {
+      return "Network error. Please check your internet connection and try again.";
+    }
+
+    // Default error message
+    return data?.error || err.message || "An unexpected error occurred. Please try again.";
+  }
+
   async function analyze() {
+    // Validate required fields
+    if (!form.equipmentDescription.trim()) {
+      setError("Equipment Description is required. Please fill it in before analyzing.");
+      return;
+    }
+    if (!form.failureDescription.trim()) {
+      setError("Failure Description is required. Please fill it in before analyzing.");
+      return;
+    }
+
     setLoading(true);
     setSeconds(0);
     setError("");
@@ -155,11 +217,16 @@ export default function Home() {
         return;
       }
 
-      if (!res.ok) throw new Error(data.error || "Request failed");
+      if (!res.ok) {
+        const errorMsg = getErrorMessage(res.status, data, {});
+        setError(errorMsg);
+        return;
+      }
 
       setResult(data);
     } catch (err: any) {
-      setError(err.message || "Unexpected error");
+      const errorMsg = getErrorMessage(0, {}, err);
+      setError(errorMsg);
     } finally {
       setLoading(false);
       setSeconds(0);
@@ -220,7 +287,12 @@ export default function Home() {
         </button>
       </form>
 
-      {error && <div className="text-red-600">{error}</div>}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+          <strong className="font-semibold">Error: </strong>
+          <span>{error}</span>
+        </div>
+      )}
     </main>
   );
 }
@@ -292,13 +364,22 @@ export default function Home() {
       />
 
       <div className="space-y-1">
-        <button
-          onClick={analyze}
-          disabled={loading}
-          className="bg-black text-white px-4 py-2 rounded disabled:opacity-50"
-        >
-          {loading ? "Analyzing..." : "Analyze"}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={analyze}
+            disabled={loading}
+            className="bg-black text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            {loading ? "Analyzing..." : "Analyze"}
+          </button>
+          <button
+            onClick={clearForm}
+            disabled={loading}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 disabled:opacity-50"
+          >
+            Clear Form
+          </button>
+        </div>
 
         {loading && (
           <div className="text-sm text-gray-600">Analyzing… {seconds}s</div>
@@ -310,7 +391,12 @@ export default function Home() {
         </div>
       </div>
 
-      {error && <div className="text-red-600">{error}</div>}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+          <strong className="font-semibold">Error: </strong>
+          <span>{error}</span>
+        </div>
+      )}
 
       {result && (
         <div className="space-y-6">
