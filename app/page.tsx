@@ -144,11 +144,13 @@ export default function Home() {
 
       <Input
         label="Equipment Description (Required Field)"
+        placeholder="e.g., Centrifugal pump, Hydraulic cylinder"
         value={form.equipmentDescription}
         onChange={(v) => updateField("equipmentDescription", v)}
       />
       <Textarea
         label="Failure Description (Required Field)"
+        placeholder="e.g., Motor seized during operation, unable to rotate"
         value={form.failureDescription}
         onChange={(v) => updateField("failureDescription", v)}
       />
@@ -176,16 +178,19 @@ export default function Home() {
 
       <Textarea
         label="Work History (Optional)"
+        placeholder="e.g., Bearing replaced Jan 2024, impeller repair Mar 2023"
         value={form.workHistory}
         onChange={(v) => updateField("workHistory", v)}
       />
       <Textarea
         label="Active PMs (Optional)"
+        placeholder="e.g., Monthly lubrication, quarterly inspection"
         value={form.activePMs}
         onChange={(v) => updateField("activePMs", v)}
       />
       <Textarea
         label="Pre-Failure Conditions (Optional)"
+        placeholder="e.g., Unusual vibration, high temperature reading"
         value={form.preFailure}
         onChange={(v) => updateField("preFailure", v)}
       />
@@ -284,10 +289,12 @@ function Textarea({
   label,
   value,
   onChange,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  placeholder?: string;
 }) {
   return (
     <label className="block">
@@ -296,6 +303,7 @@ function Textarea({
         className="border p-2 w-full rounded min-h-[100px]"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
       />
     </label>
   );
