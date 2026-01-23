@@ -41,6 +41,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [copySuccess, setCopySuccess] = useState("");
+  const [exampleIndex, setExampleIndex] = useState(0);
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -130,6 +131,53 @@ export default function Home() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  const examples = [
+    {
+      equipmentDescription: "Centrifugal Pump",
+      make: "Goulds",
+      model: "3196 STX",
+      serialNumber: "CP-2024-1547",
+      age: "8",
+      workHistory: "Impeller replaced March 2023, mechanical seal replaced July 2024, bearing inspection December 2024",
+      activePMs: "Monthly vibration analysis, quarterly alignment checks, annual mechanical seal inspection",
+      preFailure: "Abnormal vibration detected during last PM, slight increase in operating temperature, unusual noise from bearing housing",
+      failureDescription: "Pump seized during operation on January 15, 2025. Motor overload protection tripped. Visual inspection revealed bearing failure with scoring on shaft. Mechanical seal shows signs of dry running.",
+      additionalNotes: "Pump was operating at 95% of rated capacity. Process fluid temperature within normal range. Last bearing replacement was 5 years ago.",
+    },
+    {
+      equipmentDescription: "3-Phase Induction Motor",
+      make: "Siemens",
+      model: "1LE1 Series",
+      serialNumber: "MTR-2019-0832",
+      age: "6",
+      workHistory: "Rewound February 2022 due to winding failure, cooling fan replaced November 2023, terminal box inspection April 2024",
+      activePMs: "Quarterly thermal imaging, bi-annual insulation resistance testing, monthly visual inspection",
+      preFailure: "Elevated operating temperature noticed over past 2 weeks, slight drop in power factor, intermittent tripping on thermal overload",
+      failureDescription: "Motor failed to start on January 10, 2025. Control panel showed overload fault. Megger test revealed very low insulation resistance. Visual inspection showed evidence of moisture ingress in terminal box and signs of winding damage.",
+      additionalNotes: "Motor operates in high-humidity environment. Last thermal imaging showed hotspot on one phase. Operating at full load for extended periods.",
+    },
+    {
+      equipmentDescription: "Hydraulic Cylinder",
+      make: "Parker",
+      model: "Series 2H",
+      serialNumber: "HC-2021-3392",
+      age: "4",
+      workHistory: "Rod seal replaced June 2023, piston seal replaced October 2024, honed cylinder bore during seal replacement",
+      activePMs: "Monthly leak inspection, quarterly pressure testing, annual seal condition assessment",
+      preFailure: "Minor external leakage observed at rod seal, slight reduction in cycle time, occasional stick-slip during extension",
+      failureDescription: "Cylinder failed catastrophically on January 8, 2025 during normal operation. Complete seal failure resulted in rapid fluid loss. Rod fully extended and could not retract. Inspection revealed damaged piston seal, scored cylinder bore, and contamination in hydraulic fluid.",
+      additionalNotes: "Operating pressure: 3000 PSI. Fluid analysis from last service showed elevated particle count. Cylinder operates in dusty environment with frequent cycling.",
+    },
+  ];
+
+  function loadExample() {
+    setForm(examples[exampleIndex]);
+    setExampleIndex((prev) => (prev + 1) % examples.length);
+    setResult(null);
+    setError("");
+    setCopySuccess("");
   }
 
   function clearForm() {
@@ -304,6 +352,19 @@ export default function Home() {
       <p className="text-gray-600">
         Enter failure details and click Analyze to generate RCFA insights.
       </p>
+
+      <div className="border-b pb-4">
+        <button
+          onClick={loadExample}
+          disabled={loading}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          Load Example
+        </button>
+        <p className="text-xs text-gray-500 mt-2">
+          Click to populate the form with a sample failure scenario
+        </p>
+      </div>
 
       <Input
         label="Equipment Description (Required Field)"
