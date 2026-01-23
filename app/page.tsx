@@ -168,7 +168,8 @@ export default function Home() {
         onChange={(v) => updateField("serialNumber", v)}
       />
       <Input
-        label="Age (Optional)"
+        label="Age in Years (Optional)"
+        placeholder="e.g., 5"
         value={form.age}
         onChange={(v) => updateField("age", v)}
       />
@@ -259,10 +260,12 @@ function Input({
   label,
   value,
   onChange,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  placeholder?: string;
 }) {
   return (
     <label className="block">
@@ -271,6 +274,7 @@ function Input({
         className="border p-2 w-full rounded"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
       />
     </label>
   );

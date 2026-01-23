@@ -29,7 +29,7 @@ Equipment Description: ${body?.equipmentDescription || ""}
 Make: ${body?.make || ""}
 Model: ${body?.model || ""}
 Serial Number: ${body?.serialNumber || ""}
-Age: ${body?.age || ""}
+Age (years): ${body?.age || ""}
 
 Work History: ${body?.workHistory || ""}
 Active PMs: ${body?.activePMs || ""}
