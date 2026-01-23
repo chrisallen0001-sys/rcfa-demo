@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import OpenAI from "openai";
+import { verifyToken } from "../auth/route";
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-5.2";
 
@@ -48,6 +50,25 @@ function tryParseJson(text: string): any {
 export async function POST(req: Request) {
   console.log("Has key?", Boolean(process.env.OPENAI_API_KEY));
   try {
+    // Verify authentication token
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth_token")?.value;
+    const tokenSecret = process.env.AUTH_TOKEN_SECRET;
+
+    if (!tokenSecret) {
+      return NextResponse.json(
+        { error: "Server configuration error" },
+        { status: 500 }
+      );
+    }
+
+    if (!token || !verifyToken(token, tokenSecret)) {
+      return NextResponse.json(
+        { error: "Unauthorized. Please log in again." },
+        { status: 401 }
+      );
+    }
+
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
         { error: "Missing OPENAI_API_KEY in .env.local" },

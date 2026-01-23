@@ -73,6 +73,14 @@ export default function Home() {
       });
 
       const data = await res.json();
+
+      if (res.status === 401) {
+        // Session expired, require re-login
+        setAuthorized(false);
+        setError("Session expired. Please log in again.");
+        return;
+      }
+
       if (!res.ok) throw new Error(data.error || "Request failed");
 
       setResult(data);
@@ -85,19 +93,28 @@ export default function Home() {
   }
 
   if (!authorized) {
-  const expected = process.env.NEXT_PUBLIC_APP_PASSWORD || "";
+  const handleLogin = async () => {
+    setError("");
 
-  const handleLogin = () => {
-    if (!expected) {
-      setError("Password is not configured.");
-      return;
-    }
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
 
-    if (password === expected) {
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Authentication failed");
+        return;
+      }
+
+      // Success - token is stored in httpOnly cookie
       setAuthorized(true);
-      setError("");
-    } else {
-      setError("Incorrect password");
+      setPassword("");
+    } catch (err: any) {
+      setError(err.message || "Authentication failed");
     }
   };
 

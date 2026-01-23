@@ -1,5 +1,28 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+# RCFA AI Demo
+
+An AI-powered Root Cause Failure Analysis tool that helps analyze equipment failures and generate actionable insights.
+
+## Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```bash
+# OpenAI API Configuration
+OPENAI_API_KEY=your-openai-api-key-here
+OPENAI_MODEL=gpt-5.2
+
+# Authentication (Server-side only - NOT exposed to browser)
+APP_PASSWORD=your-access-password-here
+AUTH_TOKEN_SECRET=random-secret-string-for-token-signing
+
+# App Configuration (Client-visible)
+NEXT_PUBLIC_APP_ENV=dev
+```
+
+**Security Note:** The authentication system uses server-side password verification with signed tokens stored in httpOnly cookies. Never use `NEXT_PUBLIC_` prefix for sensitive values like passwords or secrets.
+
 ## Getting Started
 
 First, run the development server:
