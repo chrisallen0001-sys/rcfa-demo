@@ -40,6 +40,7 @@ export default function Home() {
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState("");
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
+  const [copySuccess, setCopySuccess] = useState("");
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -59,11 +60,84 @@ export default function Home() {
     };
   }, [loading]);
 
+  function formatResultsAsText(): string {
+    if (!result) return "";
+
+    let text = "RCFA ANALYSIS RESULTS\n";
+    text += "=".repeat(50) + "\n\n";
+
+    text += "EQUIPMENT INFORMATION\n";
+    text += "-".repeat(50) + "\n";
+    text += `Equipment: ${form.equipmentDescription}\n`;
+    if (form.make) text += `Make: ${form.make}\n`;
+    if (form.model) text += `Model: ${form.model}\n`;
+    if (form.serialNumber) text += `Serial Number: ${form.serialNumber}\n`;
+    if (form.age) text += `Age: ${form.age} years\n`;
+    text += `\nFailure Description: ${form.failureDescription}\n`;
+    text += "\n";
+
+    text += "FOLLOW-UP QUESTIONS\n";
+    text += "-".repeat(50) + "\n";
+    result.followUpQuestions.forEach((q, i) => {
+      text += `${i + 1}. ${q}\n`;
+    });
+    text += "\n";
+
+    text += "TOP ROOT CAUSE CONTENDERS\n";
+    text += "-".repeat(50) + "\n";
+    result.rootCauseContenders.forEach((c, i) => {
+      text += `${i + 1}. ${c.cause}\n`;
+      text += `   Rationale: ${c.rationale}\n`;
+      text += `   Confidence: ${c.confidence}\n\n`;
+    });
+
+    text += "TOP ACTION ITEMS\n";
+    text += "-".repeat(50) + "\n";
+    result.actionItems.forEach((a, i) => {
+      text += `${i + 1}. ${a.action}\n`;
+      text += `   Owner: ${a.owner}\n`;
+      text += `   Priority: ${a.priority}\n`;
+      text += `   Timeframe: ${a.timeframe}\n`;
+      text += `   Success Criteria: ${a.successCriteria}\n\n`;
+    });
+
+    text += "-".repeat(50) + "\n";
+    text += `Generated: ${new Date().toLocaleString()}\n`;
+
+    return text;
+  }
+
+  async function copyToClipboard() {
+    try {
+      const text = formatResultsAsText();
+      await navigator.clipboard.writeText(text);
+      setCopySuccess("Copied to clipboard!");
+      setTimeout(() => setCopySuccess(""), 3000);
+    } catch (err) {
+      setCopySuccess("Failed to copy");
+      setTimeout(() => setCopySuccess(""), 3000);
+    }
+  }
+
+  function downloadAsText() {
+    const text = formatResultsAsText();
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `rcfa-analysis-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   async function analyze() {
     setLoading(true);
     setSeconds(0);
     setError("");
     setResult(null);
+    setCopySuccess("");
 
     try {
       const res = await fetch("/api/analyze", {
@@ -240,6 +314,24 @@ export default function Home() {
 
       {result && (
         <div className="space-y-6">
+          <div className="flex gap-3 items-center">
+            <button
+              onClick={copyToClipboard}
+              className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+            >
+              Copy to Clipboard
+            </button>
+            <button
+              onClick={downloadAsText}
+              className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+            >
+              Download as Text
+            </button>
+            {copySuccess && (
+              <span className="text-green-600 text-sm">{copySuccess}</span>
+            )}
+          </div>
+
           <Section title="Follow-up Questions">
             <ul className="list-disc pl-6">
               {result.followUpQuestions.map((q, i) => (
